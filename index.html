@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabungin - Aplikasi Tabungan Digital</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for Visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            600: '#16a34a',
+                            700: '#15803d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8fafc;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col justify-between">
+
+    <div>
+        <!-- Header / Navigation -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-30">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16 items-center">
+                    <div class="flex items-center gap-3">
+                        <div class="bg-emerald-600 text-white p-2.5 rounded-xl shadow-md shadow-emerald-200">
+                            <i data-lucide="wallet" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-slate-900 leading-tight">Tabungin</h1>
+                            <p class="text-xs text-slate-500 font-medium">Kelola Tabungan & Impianmu</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="openModal('modalReset')" class="text-xs font-semibold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-2 rounded-lg transition-colors flex items-center gap-1.5">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                            <span class="hidden sm:inline">Reset Data</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            <!-- Top Stats Banner -->
+            <section class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                <!-- Total Saldo -->
+                <div class="bg-gradient-to-br from-emerald-600 to-teal-700 text-white rounded-2xl p-6 shadow-xl shadow-emerald-900/10 relative overflow-hidden">
+                    <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-xs font-medium text-emerald-100 uppercase tracking-wider">Total Tabungan</p>
+                            <h2 id="totalBalance" class="text-3xl font-extrabold mt-1">Rp 0</h2>
+                        </div>
+                        <div class="p-2.5 bg-white/10 backdrop-blur-md rounded-xl">
+                            <i data-lucide="vault" class="w-6 h-6 text-emerald-100"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-emerald-100 border-t border-white/10 pt-3 mt-2">
+                        <span>Status Keuangan</span>
+                        <span class="font-semibold bg-white/20 px-2 py-0.5 rounded text-white">Aktif</span>
+                    </div>
+                </div>
+
+                <!-- Total Target -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Target Keseluruhan</p>
+                            <h2 id="totalTarget" class="text-3xl font-bold text-slate-800 mt-1">Rp 0</h2>
+                        </div>
+                        <div class="p-2.5 bg-indigo-50 text-indigo-600 rounded-xl">
+                            <i data-lucide="target" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                    <!-- Progress Bar Overall -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs font-medium">
+                            <span class="text-slate-500">Progress Total</span>
+                            <span id="overallPercentage" class="text-indigo-600 font-bold">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div id="overallProgressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fast Actions / Quick Deposit -->
+                <div class="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-sm font-semibold text-slate-700 mb-1">Aksi Cepat</h3>
+                        <p class="text-xs text-slate-400 mb-4">Tambahkan tabungan atau buat impian baru.</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="openModal('modalAddGoal')" class="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 px-4 rounded-xl shadow-md shadow-emerald-600/20 text-xs transition-all active:scale-95">
+                            <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                            Target Baru
+                        </button>
+                        <button onclick="openModal('modalTransaction')" class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold py-2.5 px-4 rounded-xl text-xs transition-all active:scale-95">
+                            <i data-lucide="arrow-left-right" class="w-4 h-4"></i>
+                            Catat Transaksi
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Column: Goals Grid (2 Cols wide on large screens) -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900">Target Tabungan Saya</h2>
+                            <p class="text-xs text-slate-500">Daftar item dan impian yang sedang Anda tabung</p>
+                        </div>
+                        <span id="goalCountBadge" class="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-1 rounded-full border border-slate-200">
+                            0 Target
+                        </span>
+                    </div>
+
+                    <!-- Goals List Container -->
+                    <div id="goalsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Dynamic content will be inserted here -->
+                    </div>
+
+                    <!-- Empty State for Goals -->
+                    <div id="emptyGoalsState" class="hidden bg-white border border-dashed border-slate-300 rounded-2xl p-8 text-center space-y-3">
+                        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                            <i data-lucide="piggy-bank" class="w-6 h-6"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800">Belum Ada Target Tabungan</h3>
+                            <p class="text-xs text-slate-500 max-w-xs mx-auto mt-1">Mulai rencanakan keuangan Anda dengan membuat target tabungan pertama.</p>
+                        </div>
+                        <button onclick="openModal('modalAddGoal')" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition-all">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            Buat Target Sekarang
+                        </button>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <!-- Chart Section -->
+                    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm">
+                        <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <i data-lucide="pie-chart" class="w-4 h-4 text-emerald-600"></i>
+                            Alokasi Tabungan
+                        </h3>
+                        <div class="relative w-full h-48 flex items-center justify-center">
+                            <canvas id="savingsChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Recent History Section -->
+                    <div class="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                <i data-lucide="history" class="w-4 h-4 text-slate-500"></i>
+                                Riwayat Transaksi
+                            </h3>
+                            <span class="text-[10px] text-slate-400">Terbaru</span>
+                        </div>
+
+                        <div id="historyList" class="space-y-3 max-h-80 overflow-y-auto pr-1">
+                            <!-- Dynamic History List -->
+                        </div>
+
+                        <div id="emptyHistoryState" class="hidden text-center py-6 text-slate-400">
+                            <i data-lucide="receipt" class="w-8 h-8 mx-auto mb-1 opacity-40"></i>
+                            <p class="text-xs">Belum ada riwayat transaksi</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="bg-white border-t border-slate-200 py-4 mt-12 text-center text-xs text-slate-500">
+        <p>© 2026 Tabungin - Aplikasi Tabungan Digital Modern. Tersimpan secara lokal di peramban Anda.</p>
+    </footer>
+
+    
+    <!-- Modal 1: Add New Goal -->
+    <div id="modalAddGoal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all scale-100">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-600"></i>
+                    Tambah Target Tabungan
+                </h3>
+                <button onclick="closeModal('modalAddGoal')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="formAddGoal" onsubmit="handleAddGoal(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nama Impian / Target</label>
+                    <input type="text" id="goalTitle" required placeholder="Contoh: Beli Laptop Baru, Liburan..." class="w-full text-xs px-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Target Nominal (Rp)</label>
+                    <input type="number" id="goalAmount" min="1000" required placeholder="Contoh: 5000000" class="w-full text-xs px-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Setoran Awal (Rp) <span class="text-slate-400 font-normal">(Opsional)</span></label>
+                    <input type="number" id="goalInitial" min="0" placeholder="0" class="w-full text-xs px-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Ikon Target</label>
+                    <select id="goalIcon" class="w-full text-xs px-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                        <option value="laptop">💻 Laptop / Gadget</option>
+                        <option value="plane">✈️ Liburan / Travel</option>
+                        <option value="car">🚗 Kendaraan</option>
+                        <option value="home">🏠 Rumah / Properti</option>
+                        <option value="shopping-bag">🛍️ Belanja / Barang</option>
+                        <option value="graduation-cap">🎓 Pendidikan</option>
+                        <option value="heart-pulse">🏥 Dana Darurat</option>
+                        <option value="piggy-bank">🐖 Lainnya</option>
+                    </select>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modalAddGoal')" class="w-1/2 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
+                    <button type="submit" class="w-1/2 py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20 transition-colors">Simpan Target</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Quick Deposit to Goal -->
+    <div id="modalDeposit" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl transform transition-all scale-100">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="arrow-up-right" class="w-5 h-5 text-emerald-600"></i>
+                    Nabung ke Target
+                </h3>
+                <button onclick="closeModal('modalDeposit')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="formDeposit" onsubmit="handleDeposit(event)" class="space-y-4">
+                <input type="hidden" id="depositGoalId">
+                <div>
+                    <p class="text-xs text-slate-500">Target:</p>
+                    <p id="depositGoalTitle" class="text-sm font-bold text-slate-800 mb-2">-</p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nominal Setoran (Rp)</label>
+                    <input type="number" id="depositAmount" min="1000" required placeholder="Contoh: 50000" class="w-full text-xs px-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+                </div>
+                <!-- Quick Amount Buttons -->
+                <div class="grid grid-cols-3 gap-2">
+                    <button type="button" onclick="setQuickDeposit(20000)" class="py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 rounded-lg text-[11px] font-semibold border border-slate-200">20rb</button>
+                    <button type="button" onclick="setQuickDeposit(50000)" class="py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 rounded-lg text-[11px] font-semibold border border-slate-200">50rb</button>
+                    <button type="button" onclick="setQuickDeposit(100000)" class="py-1.5 bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-600 rounded-lg text-[11px] font-semibold border border-slate-200">100rb</button>
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modalDeposit')" class="w-1/2 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
+                    <button type="submit" class="w-1/2 py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20 transition-colors">Setor Tabungan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: General Transaction (Setor / Tarik Umum) -->
+    <div id="modalTransaction" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl transform transition-all scale-100">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i data-lucide="arrow-left-right" class="w-5 h-5 text-indigo-600"></i>
+                    Catat Transaksi
+                </h3>
+                <button onclick="closeModal('modalTransaction')" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="formTransaction" onsubmit="handleTransaction(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Pilih Target Tabungan</label>
+                    <select id="txGoalId" required class="w-full text-xs px-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <!-- Dynamic Options -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Jenis Transaksi</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="border border-slate-200 rounded-xl p-2.5 flex items-center gap-2 cursor-pointer hover:bg-slate-50 has-[:checked]:bg-emerald-50 has-[:checked]:border-emerald-500">
+                            <input type="radio" name="txType" value="deposit" checked class="text-emerald-600 focus:ring-emerald-500">
+                            <span class="text-xs font-semibold text-slate-700">Setor (+)</span >
+                        </label>
+                        <label class="border border-slate-200 rounded-xl p-2.5 flex items-center gap-2 cursor-pointer hover:bg-slate-50 has-[:checked]:bg-rose-50 has-[:checked]:border-rose-500">
+                            <input type="radio" name="txType" value="withdraw" class="text-rose-600 focus:ring-rose-500">
+                            <span class="text-xs font-semibold text-slate-700">Tarik (-)</span >
+                        </label>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nominal (Rp)</label>
+                    <input type="number" id="txAmount" min="1000" required placeholder="Contoh: 100000" class="w-full text-xs px-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan / Keterangan</label>
+                    <input type="text" id="txNote" placeholder="Contoh: Sisa uang saku, Penarikan darurat" class="w-full text-xs px-3 py-2.5 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                </div>
+                <div class="flex gap-2 pt-2">
+                    <button type="button" onclick="closeModal('modalTransaction')" class="w-1/2 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
+                    <button type="submit" class="w-1/2 py-2.5 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-md transition-colors">Simpan Transaksi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 4: Reset Confirmation -->
+    <div id="modalReset" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl text-center space-y-4">
+            <div class="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                <i data-lucide="alert-triangle" class="w-6 h-6"></i>
+            </div>
+            <div>
+                <h3 class="text-base font-bold text-slate-800">Reset Seluruh Data?</h3>
+                <p class="text-xs text-slate-500 mt-1">Tindakan ini akan menghapus seluruh target tabungan dan riwayat transaksi. Data tidak dapat dikembalikan.</p>
+            </div>
+            <div class="flex gap-2 pt-2">
+                <button type="button" onclick="closeModal('modalReset')" class="w-1/2 py-2.5 text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors">Batal</button>
+                <button type="button" onclick="handleResetAll()" class="w-1/2 py-2.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-md shadow-rose-600/20 transition-colors">Ya, Hapus Data</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toastNotification" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2">
+        <i id="toastIcon" data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+        <span id="toastMessage">Pesan Notifikasi</span>
+    </div>
+
+    <script>
+        // --- State Management ---
+        const STORAGE_KEY_GOALS = 'tabungin_goals_v1';
+        const STORAGE_KEY_HISTORY = 'tabungin_history_v1';
+
+        let goals = JSON.parse(localStorage.getItem(STORAGE_KEY_GOALS)) || [
+            {
+                id: '1',
+                title: 'Beli Laptop Gaming',
+                target: 12000000,
+                current: 4500000,
+                icon: 'laptop',
+                createdAt: new Date().toISOString()
+            },
+            {
+                id: '2',
+                title: 'Liburan ke Bali',
+                target: 3500000,
+                current: 2100000,
+                icon: 'plane',
+                createdAt: new Date().toISOString()
+            }
+        ];
+
+        let history = JSON.parse(localStorage.getItem(STORAGE_KEY_HISTORY)) || [
+            {
+                id: 'h1',
+                goalTitle: 'Beli Laptop Gaming',
+                type: 'deposit',
+                amount: 500000,
+                date: new Date(Date.now() - 86400000).toISOString(),
+                note: 'Tabungan bulanan'
+            },
+            {
+                id: 'h2',
+                goalTitle: 'Liburan ke Bali',
+                type: 'deposit',
+                amount: 300000,
+                date: new Date(Date.now() - 172800000).toISOString(),
+                note: 'Setoran mingguan'
+            }
+        ];
+
+        let savingsChart = null;
+
+        // --- Helper Functions ---
+        function formatRupiah(number) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                maximumFractionDigits: 0
+            }).format(number);
+        }
+
+        function saveState() {
+            localStorage.setItem(STORAGE_KEY_GOALS, JSON.stringify(goals));
+            localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(history));
+            updateDashboard();
+        }
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toastNotification');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = message;
+            if (isError) {
+                toastIcon.setAttribute('data-lucide', 'alert-circle');
+                toastIcon.className = 'w-4 h-4 text-rose-400';
+            } else {
+                toastIcon.setAttribute('data-lucide', 'check-circle');
+                toastIcon.className = 'w-4 h-4 text-emerald-400';
+            }
+            lucide.createIcons();
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            if (id === 'modalTransaction') {
+                populateGoalSelectOptions();
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+        }
+
+        function getLucideIconName(iconType) {
+            const iconMap = {
+                'laptop': 'laptop',
+                'plane': 'plane',
+                'car': 'car',
+                'home': 'home',
+                'shopping-bag': 'shopping-bag',
+                'graduation-cap': 'graduation-cap',
+                'heart-pulse': 'heart-pulse',
+                'piggy-bank': 'piggy-bank'
+            };
+            return iconMap[iconType] || 'piggy-bank';
+        }
+
+        // --- Core UI Update Functions ---
+        function updateDashboard() {
+            // Calculate Totals
+            const totalCurrent = goals.reduce((sum, g) => sum + g.current, 0);
+            const totalTarget = goals.reduce((sum, g) => sum + g.target, 0);
+            const overallPercentage = totalTarget > 0 ? Math.min(Math.round((totalCurrent / totalTarget) * 100), 100) : 0;
+
+            // Render Header Stats
+            document.getElementById('totalBalance').textContent = formatRupiah(totalCurrent);
+            document.getElementById('totalTarget').textContent = formatRupiah(totalTarget);
+            document.getElementById('overallPercentage').textContent = `${overallPercentage}%`;
+            document.getElementById('overallProgressBar').style.width = `${overallPercentage}%`;
+            document.getElementById('goalCountBadge').textContent = `${goals.length} Target`;
+
+            // Render Goals
+            renderGoalsList();
+
+            // Render History
+            renderHistoryList();
+
+            // Render Chart
+            renderChart();
+
+            // Re-initialize Lucide Icons
+            lucide.createIcons();
+        }
+
+        function renderGoalsList() {
+            const container = document.getElementById('goalsContainer');
+            const emptyState = document.getElementById('emptyGoalsState');
+
+            if (goals.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = goals.map(goal => {
+                const percent = Math.min(Math.round((goal.current / goal.target) * 100), 100);
+                const isCompleted = goal.current >= goal.target;
+
+                return `
+                    <div class="bg-white border ${isCompleted ? 'border-emerald-300 ring-2 ring-emerald-500/10' : 'border-slate-200'} rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="p-2.5 ${isCompleted ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-700'} rounded-xl">
+                                    <i data-lucide="${getLucideIconName(goal.icon)}" class="w-5 h-5"></i>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    <button onclick="openDepositModal('${goal.id}')" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors" title="Setor Cepat">
+                                        <i data-lucide="plus-circle" class="w-4 h-4"></i>
+                                    </button>
+                                    <button onclick="handleDeleteGoal('${goal.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors" title="Hapus Target">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <h3 class="font-bold text-slate-800 text-sm mb-1">${goal.title}</h3>
+                            <div class="flex items-baseline gap-1.5 mb-3">
+                                <span class="text-base font-extrabold text-slate-900">${formatRupiah(goal.current)}</span>
+                                <span class="text-xs text-slate-400 font-medium">/ ${formatRupiah(goal.target)}</span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 pt-2 border-t border-slate-100">
+                            <div class="flex justify-between text-xs font-semibold">
+                                <span class="${isCompleted ? 'text-emerald-600' : 'text-slate-500'}">
+                                    ${isCompleted ? '🎉 Target Tercapai!' : 'Terkumpul'}
+                                </span>
+                                <span class="${isCompleted ? 'text-emerald-600' : 'text-slate-700'}">${percent}%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <div class="${isCompleted ? 'bg-emerald-500' : 'bg-emerald-600'} h-2 rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+                            </div>
+                            <button onclick="openDepositModal('${goal.id}')" class="w-full mt-2 py-2 bg-slate-50 hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-200 hover:border-emerald-200 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1">
+                                <i data-lucide="piggy-bank" class="w-3.5 h-3.5"></i>
+                                Tambah Tabungan
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderHistoryList() {
+            const container = document.getElementById('historyList');
+            const emptyState = document.getElementById('emptyHistoryState');
+
+            if (history.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            container.innerHTML = history.slice(0, 10).map(item => {
+                const isDeposit = item.type === 'deposit';
+                const dateFormatted = new Date(item.date).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short'
+                });
+
+                return `
+                    <div class="flex items-center justify-between p-2.5 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-lg ${isDeposit ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">
+                                <i data-lucide="${isDeposit ? 'arrow-down-left' : 'arrow-up-right'}" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-slate-800">${item.goalTitle}</p>
+                                <p class="text-[10px] text-slate-400">${item.note || (isDeposit ? 'Setoran Tabungan' : 'Penarikan Dana')} • ${dateFormatted}</p>
+                            </div>
+                        </div>
+                        <span class="text-xs font-bold ${isDeposit ? 'text-emerald-600' : 'text-rose-600'}">
+                            ${isDeposit ? '+' : '-'}${formatRupiah(item.amount)}
+                        </span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('savingsChart').getContext('2d');
+            
+            if (savingsChart) {
+                savingsChart.destroy();
+            }
+
+            if (goals.length === 0 || goals.every(g => g.current === 0)) {
+                savingsChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Belum Ada Data'],
+                        datasets: [{
+                            data: [1],
+                            backgroundColor: ['#e2e8f0']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { enabled: false }
+                        }
+                    }
+                });
+                return;
+            }
+
+            const labels = goals.map(g => g.title);
+            const data = goals.map(g => g.current);
+            const colors = [
+                '#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', 
+                '#ec4899', '#14b8a6', '#f97316', '#6366f1'
+            ];
+
+            savingsChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: colors.slice(0, goals.length),
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                boxWidth: 10,
+                                font: { size: 10, family: 'Plus Jakarta Sans' }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        // --- Action Handlers ---
+        function handleAddGoal(e) {
+            e.preventDefault();
+            const title = document.getElementById('goalTitle').value.trim();
+            const target = parseFloat(document.getElementById('goalAmount').value);
+            const initial = parseFloat(document.getElementById('goalInitial').value) || 0;
+            const icon = document.getElementById('goalIcon').value;
+
+            if (!title || !target || target <= 0) {
+                showToast('Mohon isi data target dengan benar.', true);
+                return;
+            }
+
+            const newGoal = {
+                id: Date.now().toString(),
+                title,
+                target,
+                current: Math.min(initial, target),
+                icon,
+                createdAt: new Date().toISOString()
+            };
+
+            goals.push(newGoal);
+
+            if (initial > 0) {
+                history.unshift({
+                    id: 'h_' + Date.now(),
+                    goalTitle: title,
+                    type: 'deposit',
+                    amount: initial,
+                    date: new Date().toISOString(),
+                    note: 'Setoran Awal'
+                });
+            }
+
+            saveState();
+            closeModal('modalAddGoal');
+            document.getElementById('formAddGoal').reset();
+            showToast('Target tabungan berhasil ditambahkan!');
+        }
+
+        function openDepositModal(goalId) {
+            const goal = goals.find(g => g.id === goalId);
+            if (!goal) return;
+
+            document.getElementById('depositGoalId').value = goal.id;
+            document.getElementById('depositGoalTitle').textContent = goal.title;
+            document.getElementById('depositAmount').value = '';
+            openModal('modalDeposit');
+        }
+
+        function setQuickDeposit(amount) {
+            document.getElementById('depositAmount').value = amount;
+        }
+
+        function handleDeposit(e) {
+            e.preventDefault();
+            const goalId = document.getElementById('depositGoalId').value;
+            const amount = parseFloat(document.getElementById('depositAmount').value);
+
+            if (!amount || amount <= 0) {
+                showToast('Masukkan nominal setoran yang valid.', true);
+                return;
+            }
+
+            const goal = goals.find(g => g.id === goalId);
+            if (goal) {
+                goal.current += amount;
+                history.unshift({
+                    id: 'h_' + Date.now(),
+                    goalTitle: goal.title,
+                    type: 'deposit',
+                    amount: amount,
+                    date: new Date().toISOString(),
+                    note: 'Setoran Tabungan'
+                });
+
+                saveState();
+                closeModal('modalDeposit');
+                showToast(`Berhasil menambah tabungan Rp ${amount.toLocaleString('id-ID')}!`);
+            }
+        }
+
+        function populateGoalSelectOptions() {
+            const select = document.getElementById('txGoalId');
+            if (goals.length === 0) {
+                select.innerHTML = `<option value="">-- Belum ada target --</option>`;
+                return;
+            }
+            select.innerHTML = goals.map(g => `<option value="${g.id}">${g.title}</option>`).join('');
+        }
+
+        function handleTransaction(e) {
+            e.preventDefault();
+            const goalId = document.getElementById('txGoalId').value;
+            const type = document.querySelector('input[name="txType"]:checked').value;
+            const amount = parseFloat(document.getElementById('txAmount').value);
+            const note = document.getElementById('txNote').value.trim();
+
+            const goal = goals.find(g => g.id === goalId);
+            if (!goal) {
+                showToast('Pilih target yang valid.', true);
+                return;
+            }
+
+            if (type === 'withdraw' && amount > goal.current) {
+                showToast('Saldo tabungan target tidak mencukupi.', true);
+                return;
+            }
+
+            if (type === 'deposit') {
+                goal.current += amount;
+            } else {
+                goal.current -= amount;
+            }
+
+            history.unshift({
+                id: 'h_' + Date.now(),
+                goalTitle: goal.title,
+                type: type,
+                amount: amount,
+                date: new Date().toISOString(),
+                note: note
+            });
+
+            saveState();
+            closeModal('modalTransaction');
+            document.getElementById('formTransaction').reset();
+            showToast('Transaksi berhasil dicatat!');
+        }
+
+        function handleDeleteGoal(goalId) {
+            if (confirm('Apakah Anda yakin ingin menghapus target ini?')) {
+                goals = goals.filter(g => g.id !== goalId);
+                saveState();
+                showToast('Target berhasil dihapus.');
+            }
+        }
+
+        function handleResetAll() {
+            goals = [];
+            history = [];
+            saveState();
+            closeModal('modalReset');
+            showToast('Seluruh data berhasil direset.');
+        }
+
+        // --- Initialization ---
+        window.onload = function() {
+            updateDashboard();
+        };
+    </script>
+</body>
+</html>
